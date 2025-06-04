@@ -38,6 +38,7 @@
 #include <Qt3DRender/QDebugOverlay>
 
 #include "qgspointlightsettings.h"
+#include "qgsabstract3dengine.h"
 
 class QgsDirectionalLightSettings;
 class QgsCameraController;
@@ -69,26 +70,45 @@ class QgsFrameGraph : public Qt3DCore::QEntity
     Q_OBJECT
 
   public:
+    using EyeTarget = QgsAbstract3DEngine::EyeTarget;
+
     //! Constructor
-    QgsFrameGraph( QSurface *surface, QSize s, Qt3DRender::QCamera *mainCamera, Qt3DCore::QEntity *root );
+    QgsFrameGraph( QSurface *surface, QSize s, Qt3DRender::QCamera *mainCamera, Qt3DRender::QCamera *rightCamera, Qt3DRender::QCamera *leftCamera, Qt3DCore::QEntity *root, bool enableStereo = false );
 
     //! Returns the root of the frame graph object
     Qt3DRender::QFrameGraphNode *frameGraphRoot() { return mRenderSurfaceSelector; }
 
     //! Returns the main camera
     Qt3DRender::QCamera *mainCamera() { return mMainCamera; }
+    Qt3DRender::QCamera *mainCamera(EyeTarget eye) {
+      switch(eye) {
+        case EyeTarget::Left: return mLeftRenderData.mCamera;
+        case EyeTarget::Right: return mRightRenderData.mCamera;
+        default: break;
+      }
+      return mMainCamera;
+    }
+
+    //! Returns a layer object used to indicate that the object is transparent
+    Qt3DRender::QLayer *renderLayer() { return mRenderLayer; }
+
+    //! Returns a layer object used to indicate that the object is transparent
+    Qt3DRender::QLayer *transparentObjectLayer() { return mTransparentObjectsLayer; }
+
+    //! Returns a layer object used to indicate that the object casts a shadow
+    Qt3DRender::QLayer *entityCastingShadowsLayer() const { return mEntityCastingShadowsLayer; }
 
     //! Returns the postprocessing entity
-    QgsPostprocessingEntity *postprocessingEntity() { return mPostprocessingEntity; }
+    QgsPostprocessingEntity *postprocessingEntity(EyeTarget eye) { return eye == EyeTarget::Left ? mLeftRenderData.mPostprocessingEntity : mRightRenderData.mPostprocessingEntity; }
 
     //! Returns entity for all rubber bands (to show them always on top)
     Qt3DCore::QEntity *rubberBandsRootEntity() { return mRubberBandsRootEntity; }
 
     //! Returns the render capture object used to take an image of the scene
-    Qt3DRender::QRenderCapture *renderCapture();
+    Qt3DRender::QRenderCapture *renderCapture(EyeTarget eye = EyeTarget::Left);
 
     //! Returns the render capture object used to take an image of the depth buffer of the scene
-    Qt3DRender::QRenderCapture *depthRenderCapture();
+    Qt3DRender::QRenderCapture *depthRenderCapture(EyeTarget eye = EyeTarget::Left);
 
     //! Sets whether frustum culling is enabled
     void setFrustumCullingEnabled( bool enabled );
@@ -141,13 +161,13 @@ class QgsFrameGraph : public Qt3DCore::QEntity
      * Will take ownership of the renderView.
      * \since QGIS 3.44
      */
-    bool registerRenderView( std::unique_ptr<QgsAbstractRenderView> renderView, const QString &name, Qt3DRender::QFrameGraphNode *topNode = nullptr );
+    bool registerRenderView( std::unique_ptr<QgsAbstractRenderView> renderView, const QString &name, EyeTarget eye, Qt3DRender::QFrameGraphNode *topNode = nullptr );
 
     /**
      * Unregisters the render view named \a name, if any
      * \since QGIS 3.44
      */
-    void unregisterRenderView( const QString &name );
+    void unregisterRenderView(const QString &name , EyeTarget eye);
 
     /**
      * Enables or disables the render view named \a name according to \a enable
@@ -155,41 +175,43 @@ class QgsFrameGraph : public Qt3DCore::QEntity
      */
     void setRenderViewEnabled( const QString &name, bool enable );
 
+    void setRenderViewEnabled( const QString &name, EyeTarget eye, bool enable );
+
     /**
      * Returns true if the render view named \a name is found and enabled
      * \since QGIS 3.44
      */
-    bool isRenderViewEnabled( const QString &name );
+    bool isRenderViewEnabled( const QString &name, EyeTarget eye );
 
     /**
      * Returns the render view named \a name, if any
      * \since QGIS 3.44
      */
-    QgsAbstractRenderView *renderView( const QString &name );
+    QgsAbstractRenderView *renderView(const QString &name, EyeTarget eye);
 
     /**
      * Returns shadow renderview
      * \since QGIS 3.44
      */
-    QgsShadowRenderView &shadowRenderView();
+    QgsShadowRenderView &shadowRenderView(EyeTarget eye = EyeTarget::Left);
 
     /**
      * Returns forward renderview
      * \since QGIS 3.44
      */
-    QgsForwardRenderView &forwardRenderView();
+    QgsForwardRenderView &forwardRenderView(EyeTarget eye);
 
     /**
      * Returns depth renderview
      * \since QGIS 3.44
      */
-    QgsDepthRenderView &depthRenderView();
+    QgsDepthRenderView &depthRenderView(EyeTarget eye);
 
     /**
      * Returns ambient occlusion renderview
      * \since QGIS 3.44
      */
-    QgsAmbientOcclusionRenderView &ambientOcclusionRenderView();
+    QgsAmbientOcclusionRenderView &ambientOcclusionRenderView(EyeTarget eye);
 
     /**
      * Updates shadow bias, light and texture size according to \a shadowSettings and \a lightSources
@@ -235,12 +257,26 @@ class QgsFrameGraph : public Qt3DCore::QEntity
 
     Qt3DRender::QCamera *mMainCamera = nullptr;
 
-    // Post processing pass branch nodes:
-    Qt3DRender::QRenderTargetSelector *mRenderCaptureTargetSelector = nullptr;
-    Qt3DRender::QRenderCapture *mRenderCapture = nullptr;
-    // Post processing pass texture related objects:
-    Qt3DRender::QTexture2D *mRenderCaptureColorTexture = nullptr;
-    Qt3DRender::QTexture2D *mRenderCaptureDepthTexture = nullptr;
+    // All nodes for each eye
+    struct EyeRenderData {
+        bool isValid() const { return mRoot != nullptr; }
+
+        Qt3DRender::QFrameGraphNode *mRoot = nullptr;
+        Qt3DRender::QCamera *mCamera = nullptr;
+        Qt3DRender::QRenderTargetSelector *mSelector = nullptr;
+        Qt3DRender::QRenderCapture *mRenderCapture = nullptr;
+        Qt3DRender::QTexture2D *mColorCaptureTexture = nullptr;
+        Qt3DRender::QTexture2D *mDepthCaptureTexture = nullptr;
+        Qt3DRender::QTexture2D *mAmbientOcclusionBlurTexture = nullptr;
+        //! shadow texture debugging
+        QgsDebugTextureEntity *mShadowTextureDebugging = nullptr;
+        //! depth texture debugging
+        QgsDebugTextureEntity *mDepthTextureDebugging = nullptr;
+        QgsPostprocessingEntity *mPostprocessingEntity = nullptr;
+    };
+
+    EyeRenderData mLeftRenderData;
+    EyeRenderData mRightRenderData;
 
     // Rubber bands pass
     Qt3DRender::QCameraSelector *mRubberBandsCameraSelector = nullptr;
@@ -254,32 +290,44 @@ class QgsFrameGraph : public Qt3DCore::QEntity
 
     Qt3DCore::QEntity *mRootEntity = nullptr;
 
+    Qt3DRender::QLayer *mRenderLayer = nullptr;
+    Qt3DRender::QLayer *mTransparentObjectsLayer = nullptr;
+    Qt3DRender::QLayer *mEntityCastingShadowsLayer = nullptr;
     Qt3DRender::QLayer *mRubberBandsLayer = nullptr;
-
-    QgsPostprocessingEntity *mPostprocessingEntity = nullptr;
+    Qt3DRender::QLayer *mCursorLayer = nullptr;
+    Qt3DRender::QLayer *mFocusPlaneLayer = nullptr;
 
     Qt3DCore::QEntity *mRubberBandsRootEntity = nullptr;
+    Qt3DCore::QEntity *mCursorRootEntity = nullptr;
+    Qt3DCore::QEntity *mFocusPlaneRootEntity = nullptr;
 
-    //! shadow texture debugging
-    QgsDebugTextureEntity *mShadowTextureDebugging = nullptr;
-    //! depth texture debugging
-    QgsDebugTextureEntity *mDepthTextureDebugging = nullptr;
+    void constructShadowRenderPass(EyeTarget eye);
+    void constructForwardRenderPass(EyeTarget eye);
+    void constructDebugTexturePass( EyeTarget eye, Qt3DRender::QFrameGraphNode *topNode = nullptr );
+    Qt3DRender::QFrameGraphNode *constructPostprocessingPass(EyeTarget eye);
+    void constructDepthRenderPass(EyeTarget eye);
+    void constructAmbientOcclusionRenderPass(EyeTarget eye);
+    Qt3DRender::QFrameGraphNode *constructRubberBandsPass(EyeTarget eye);
+    Qt3DRender::QFrameGraphNode *constructFocusPlanePass(EyeTarget eye);
+    Qt3DRender::QFrameGraphNode *constructCursorPass(EyeTarget eye);
 
-    void constructShadowRenderPass();
-    void constructForwardRenderPass();
-    void constructDebugTexturePass( Qt3DRender::QFrameGraphNode *topNode = nullptr );
-    Qt3DRender::QFrameGraphNode *constructPostprocessingPass();
-    void constructDepthRenderPass();
-    void constructAmbientOcclusionRenderPass();
-    Qt3DRender::QFrameGraphNode *constructRubberBandsPass();
+    Qt3DRender::QFrameGraphNode *constructSubPostPassForProcessing(EyeTarget eye);
+    Qt3DRender::QFrameGraphNode *constructSubPostPassForRenderCapture(EyeTarget eye);
 
-    Qt3DRender::QFrameGraphNode *constructSubPostPassForProcessing();
-    Qt3DRender::QFrameGraphNode *constructSubPostPassForRenderCapture();
+    bool isEyeTargetValid(EyeTarget eye) {
+      if (eye == EyeTarget::Left)
+        return mLeftRenderData.isValid();
+      if (eye == EyeTarget::Right)
+        return mRightRenderData.isValid();
+      return false;
+    }
 
     bool mRenderCaptureEnabled = false;
+    bool mStereoEnabled = false;
 
     // holds renderviews according to their name
-    std::map<QString, std::unique_ptr<QgsAbstractRenderView>> mRenderViewMap;
+    std::map<QString, std::unique_ptr<QgsAbstractRenderView>> mLeftEyeRenderViewMap;
+    std::map<QString, std::unique_ptr<QgsAbstractRenderView>> mRightEyeRenderViewMap;
 
     Q_DISABLE_COPY( QgsFrameGraph )
 };

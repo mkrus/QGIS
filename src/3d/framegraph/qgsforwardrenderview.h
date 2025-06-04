@@ -48,13 +48,7 @@ class QgsForwardRenderView : public QgsAbstractRenderView
 {
   public:
     //! Constructor with 3D scene camera
-    QgsForwardRenderView( const QString &viewName, Qt3DRender::QCamera *mainCamera );
-
-    //! Returns a layer object used to indicate that the object is transparent
-    Qt3DRender::QLayer *renderLayer() { return mRenderLayer; }
-
-    //! Returns a layer object used to indicate that the object is transparent
-    Qt3DRender::QLayer *transparentObjectLayer() { return mTransparentObjectsLayer; }
+    QgsForwardRenderView( const QString &viewName, Qt3DRender::QCamera *mainCamera, Qt3DRender::QLayer *renderLayer, Qt3DRender::QLayer *transparentObjectsLayer );
 
     //! Sets the clear color of the scene (background color)
     void setClearColor( const QColor &clearColor );
@@ -105,8 +99,6 @@ class QgsForwardRenderView : public QgsAbstractRenderView
     // clip planes render state
     Qt3DRender::QRenderStateSet *mClipRenderStateSet = nullptr;
 
-    Qt3DRender::QLayer *mRenderLayer = nullptr;
-    Qt3DRender::QLayer *mTransparentObjectsLayer = nullptr;
     Qt3DRender::QClearBuffers *mClearBuffers = nullptr;
     bool mFrustumCullingEnabled = true;
     Qt3DRender::QFrustumCulling *mFrustumCulling = nullptr;
@@ -121,7 +113,7 @@ class QgsForwardRenderView : public QgsAbstractRenderView
     /**
      * Builds the three forward passes needed by forward: one for solid objects, followed by two for transparent objects
      */
-    void buildRenderPasses();
+    void buildRenderPasses(Qt3DRender::QLayer *renderLayer, Qt3DRender::QLayer *transparentObjectsLayer);
 
     /**
      * Build color and depth textures and add then to a new rendertarget

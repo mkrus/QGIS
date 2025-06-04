@@ -74,13 +74,15 @@ class _3D_EXPORT QgsOffscreen3DEngine : public QgsAbstract3DEngine
     void setRootEntity( Qt3DCore::QEntity *root ) override;
 
     Qt3DRender::QRenderSettings *renderSettings() override;
-    Qt3DRender::QCamera *camera() override;
+    Qt3DRender::QCamera *camera(EyeTarget eye = EyeTarget::Center) override;
     QSize size() const override;
     QSurface *surface() const override;
 
   private:
     QSize mSize = QSize( 640, 480 );
     Qt3DRender::QCamera *mCamera = nullptr;
+    Qt3DRender::QCamera *mRightCamera = nullptr;
+    Qt3DRender::QCamera *mLeftCamera = nullptr;
     QOffscreenSurface *mOffscreenSurface = nullptr;
 
     // basic Qt3D stuff

@@ -35,17 +35,14 @@
 #include <Qt3DRender/QPolygonOffset>
 #include <Qt3DRender/qsubtreeenabler.h>
 
-QgsShadowRenderView::QgsShadowRenderView( const QString &viewName )
+QgsShadowRenderView::QgsShadowRenderView(const QString &viewName , Qt3DRender::QLayer *entityCastingShadowsLayer)
   : QgsAbstractRenderView( viewName )
 {
   mLightCamera = new Qt3DRender::QCamera;
   mLightCamera->setObjectName( mViewName + "::LightCamera" );
-  mEntityCastingShadowsLayer = new Qt3DRender::QLayer;
-  mEntityCastingShadowsLayer->setRecursive( true );
-  mEntityCastingShadowsLayer->setObjectName( mViewName + "::Layer" );
 
   // shadow rendering pass
-  buildRenderPass();
+  buildRenderPass(entityCastingShadowsLayer);
 }
 
 void QgsShadowRenderView::setEnabled( bool enable )
@@ -78,7 +75,7 @@ Qt3DRender::QRenderTarget *QgsShadowRenderView::buildTextures()
   return renderTarget;
 }
 
-void QgsShadowRenderView::buildRenderPass()
+void QgsShadowRenderView::buildRenderPass(Qt3DRender::QLayer *entityCastingShadowsLayer)
 {
   // build render pass
   Qt3DRender::QCameraSelector *lightCameraSelector = new Qt3DRender::QCameraSelector( mRendererEnabler );
@@ -86,7 +83,7 @@ void QgsShadowRenderView::buildRenderPass()
   lightCameraSelector->setCamera( mLightCamera );
 
   mLayerFilter = new Qt3DRender::QLayerFilter( lightCameraSelector );
-  mLayerFilter->addLayer( mEntityCastingShadowsLayer );
+  mLayerFilter->addLayer( entityCastingShadowsLayer );
 
   Qt3DRender::QRenderTargetSelector *renderTargetSelector = new Qt3DRender::QRenderTargetSelector( mLayerFilter );
 
@@ -114,12 +111,6 @@ void QgsShadowRenderView::buildRenderPass()
 
   renderTargetSelector->setTarget( renderTarget );
 }
-
-Qt3DRender::QLayer *QgsShadowRenderView::entityCastingShadowsLayer() const
-{
-  return mEntityCastingShadowsLayer;
-}
-
 
 void QgsShadowRenderView::setMapSize( int width, int height )
 {

@@ -45,6 +45,8 @@ Qgs3DMapCanvas::Qgs3DMapCanvas()
   , m_logicAspect( new Qt3DLogic::QLogicAspect )
   , m_renderSettings( new Qt3DRender::QRenderSettings )
   , m_defaultCamera( new Qt3DRender::QCamera )
+  , m_rightCamera( new Qt3DRender::QCamera )
+  , m_leftCamera( new Qt3DRender::QCamera )
   , m_inputSettings( new Qt3DInput::QInputSettings )
   , m_root( new Qt3DCore::QEntity )
   , m_userRoot( nullptr )
@@ -61,6 +63,8 @@ Qgs3DMapCanvas::Qgs3DMapCanvas()
   m_aspectEngine->registerAspect( m_logicAspect );
 
   m_defaultCamera->setParent( m_root );
+  m_rightCamera->setParent( m_root );
+  m_leftCamera->setParent( m_root );
   m_inputSettings->setEventSource( this );
 
   const QgsSettings setting;
@@ -114,8 +118,12 @@ Qt3DRender::QFrameGraphNode *Qgs3DMapCanvas::activeFrameGraph() const
   return m_renderSettings->activeFrameGraph();
 }
 
-Qt3DRender::QCamera *Qgs3DMapCanvas::camera() const
+Qt3DRender::QCamera *Qgs3DMapCanvas::camera(QgsAbstract3DEngine::EyeTarget eye) const
 {
+  if (eye == QgsAbstract3DEngine::EyeTarget::Left)
+    return m_leftCamera;
+  if (eye == QgsAbstract3DEngine::EyeTarget::Right)
+    return m_rightCamera;
   return m_defaultCamera;
 }
 

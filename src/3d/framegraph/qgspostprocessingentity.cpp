@@ -48,12 +48,12 @@ typedef Qt3DCore::QGeometry Qt3DQGeometry;
 #include "qgsforwardrenderview.h"
 #include "qgsambientocclusionrenderview.h"
 
-QgsPostprocessingEntity::QgsPostprocessingEntity( QgsFrameGraph *frameGraph, Qt3DRender::QLayer *layer, QNode *parent )
+QgsPostprocessingEntity::QgsPostprocessingEntity( QgsFrameGraph *frameGraph, QgsAbstract3DEngine::EyeTarget eye, Qt3DRender::QLayer *layer, QNode *parent )
   : QgsRenderPassQuad( layer, parent )
 {
-  QgsShadowRenderView &shadowRenderView = frameGraph->shadowRenderView();
-  QgsForwardRenderView &forwardRenderView = frameGraph->forwardRenderView();
-  QgsAmbientOcclusionRenderView &aoRenderView = frameGraph->ambientOcclusionRenderView();
+  QgsShadowRenderView &shadowRenderView = frameGraph->shadowRenderView(eye);
+  QgsForwardRenderView &forwardRenderView = frameGraph->forwardRenderView(eye);
+  QgsAmbientOcclusionRenderView &aoRenderView = frameGraph->ambientOcclusionRenderView(eye);
 
   mColorTextureParameter = new Qt3DRender::QParameter( QStringLiteral( "colorTexture" ), forwardRenderView.colorTexture() );
   mDepthTextureParameter = new Qt3DRender::QParameter( QStringLiteral( "depthTexture" ), forwardRenderView.depthTexture() );
@@ -64,7 +64,7 @@ QgsPostprocessingEntity::QgsPostprocessingEntity( QgsFrameGraph *frameGraph, Qt3
   mMaterial->addParameter( mShadowMapParameter );
   mMaterial->addParameter( mAmbientOcclusionTextureParameter );
 
-  mMainCamera = frameGraph->mainCamera();
+  mMainCamera = frameGraph->mainCamera(eye);
   mLightCamera = shadowRenderView.lightCamera();
 
   mFarPlaneParameter = new Qt3DRender::QParameter( QStringLiteral( "farPlane" ), mMainCamera->farPlane() );

@@ -95,6 +95,11 @@ Qgs3DTerrainRegistry *Qgs3D::terrainRegistry()
   return instance()->mTerrainRegistry;
 }
 
+bool Qgs3D::stereoRenderingEnabled()
+{
+  return qEnvironmentVariableIsSet("QT3D_STEREO_RENDERING");
+}
+
 Qgs3D::Qgs3D()
 {
   mMaterialRegistry = new QgsMaterialRegistry();

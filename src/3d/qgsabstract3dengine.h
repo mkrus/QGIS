@@ -61,6 +61,12 @@ class _3D_EXPORT QgsAbstract3DEngine : public QObject
 {
     Q_OBJECT
   public:
+    enum class EyeTarget {
+      Center,
+      Left,
+      Right
+    };
+
     /**
      * Constructor for QgsAbstract3DEngine with the specified \a parent object.
      */
@@ -76,7 +82,7 @@ class _3D_EXPORT QgsAbstract3DEngine : public QObject
     //! Returns access to the engine's render settings (the frame graph can be accessed from here)
     virtual Qt3DRender::QRenderSettings *renderSettings() = 0;
     //! Returns pointer to the engine's camera entity
-    virtual Qt3DRender::QCamera *camera() = 0;
+    virtual Qt3DRender::QCamera *camera(EyeTarget eye = EyeTarget::Center) = 0;
     //! Returns size of the engine's rendering area in pixels
     virtual QSize size() const = 0;
     //! Sets the size of the rendering area (in pixels)

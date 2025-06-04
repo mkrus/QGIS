@@ -58,6 +58,11 @@ class _3D_EXPORT Qgs3D
      */
     static Qgs3DTerrainRegistry *terrainRegistry();
 
+    /**
+     * Returns whether stereo rendering is enabled
+     */
+    static bool stereoRenderingEnabled();
+
   private:
     Qgs3D();
 

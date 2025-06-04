@@ -17,6 +17,7 @@
 #define QGS3DMAPCANVAS_H
 
 #include "qgis_3d.h"
+#include "qgsabstract3dengine.h"
 
 #include "qgis.h"
 #include "qgsrange.h"
@@ -115,7 +116,7 @@ class _3D_EXPORT Qgs3DMapCanvas : public QWindow
     /**
      * Returns the default camera of the 3D Window.
      */
-    Qt3DRender::QCamera *camera() const;
+    Qt3DRender::QCamera *camera(QgsAbstract3DEngine::EyeTarget eye = QgsAbstract3DEngine::EyeTarget::Center) const;
 
     /**
      * Returns the render settings of the 3D Window.
@@ -228,6 +229,8 @@ class _3D_EXPORT Qgs3DMapCanvas : public QWindow
     // Renderer configuration
     Qt3DRender::QRenderSettings *m_renderSettings;
     Qt3DRender::QCamera *m_defaultCamera;
+    Qt3DRender::QCamera *m_leftCamera;
+    Qt3DRender::QCamera *m_rightCamera;
 
     // Input configuration
     Qt3DInput::QInputSettings *m_inputSettings;

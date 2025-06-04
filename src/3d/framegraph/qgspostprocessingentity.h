@@ -17,6 +17,7 @@
 #define QGSPOSTPROCESSINGENTITY_H
 
 #include "qgsrenderpassquad.h"
+#include "qgsabstract3dengine.h"
 
 class QgsFrameGraph;
 class QgsShadowRenderView;
@@ -38,7 +39,7 @@ class QgsPostprocessingEntity : public QgsRenderPassQuad
 
   public:
     //! Constructor
-    QgsPostprocessingEntity( QgsFrameGraph *frameGraph, Qt3DRender::QLayer *layer, QNode *parent = nullptr );
+    QgsPostprocessingEntity(QgsFrameGraph *frameGraph, QgsAbstract3DEngine::EyeTarget eye, Qt3DRender::QLayer *layer, QNode *parent = nullptr );
     //! Sets the parts of the scene where objects cast shadows
     void setupShadowRenderingExtent( float minX, float maxX, float minY, float maxY );
     //! Sets up a directional light that is used to render shadows

@@ -41,20 +41,12 @@
 #include <Qt3DRender/QDebugOverlay>
 #endif
 
-QgsForwardRenderView::QgsForwardRenderView( const QString &viewName, Qt3DRender::QCamera *mainCamera )
+QgsForwardRenderView::QgsForwardRenderView(const QString &viewName, Qt3DRender::QCamera *mainCamera , Qt3DRender::QLayer *renderLayer, Qt3DRender::QLayer *transparentObjectsLayer)
   : QgsAbstractRenderView( viewName )
   , mMainCamera( mainCamera )
 {
-  mRenderLayer = new Qt3DRender::QLayer;
-  mRenderLayer->setRecursive( true );
-  mRenderLayer->setObjectName( mViewName + "::Layer" );
-
-  mTransparentObjectsLayer = new Qt3DRender::QLayer;
-  mTransparentObjectsLayer->setRecursive( true );
-  mTransparentObjectsLayer->setObjectName( mViewName + "::TransparentLayer" );
-
   // forward rendering pass
-  buildRenderPasses();
+  buildRenderPasses(renderLayer, transparentObjectsLayer);
 }
 
 Qt3DRender::QRenderTarget *QgsForwardRenderView::buildTextures()
@@ -133,14 +125,14 @@ Qt3DRender::QRenderTarget *QgsForwardRenderView::buildTextures()
  *  +-----------------+
  *
  */
-void QgsForwardRenderView::buildRenderPasses()
+void QgsForwardRenderView::buildRenderPasses(Qt3DRender::QLayer *renderLayer, Qt3DRender::QLayer *transparentObjectsLayer)
 {
   mMainCameraSelector = new Qt3DRender::QCameraSelector( mRendererEnabler );
   mMainCameraSelector->setObjectName( mViewName + "::CameraSelector" );
   mMainCameraSelector->setCamera( mMainCamera );
 
   mLayerFilter = new Qt3DRender::QLayerFilter( mMainCameraSelector );
-  mLayerFilter->addLayer( mRenderLayer );
+  mLayerFilter->addLayer( renderLayer );
 
   mClipRenderStateSet = new Qt3DRender::QRenderStateSet( mLayerFilter );
   mClipRenderStateSet->setObjectName( mViewName + "::Clip Plane RenderStateSet" );
@@ -152,7 +144,7 @@ void QgsForwardRenderView::buildRenderPasses()
 
   // first branch: opaque layer filter
   Qt3DRender::QLayerFilter *opaqueObjectsFilter = new Qt3DRender::QLayerFilter( mRenderTargetSelector );
-  opaqueObjectsFilter->addLayer( mTransparentObjectsLayer );
+  opaqueObjectsFilter->addLayer( transparentObjectsLayer );
   opaqueObjectsFilter->setFilterMode( Qt3DRender::QLayerFilter::DiscardAnyMatchingLayers );
 
   Qt3DRender::QRenderStateSet *renderStateSet = new Qt3DRender::QRenderStateSet( opaqueObjectsFilter );
@@ -174,7 +166,7 @@ void QgsForwardRenderView::buildRenderPasses()
 
   // second branch: transparent layer filter - color
   Qt3DRender::QLayerFilter *transparentObjectsLayerFilter = new Qt3DRender::QLayerFilter( mRenderTargetSelector );
-  transparentObjectsLayerFilter->addLayer( mTransparentObjectsLayer );
+  transparentObjectsLayerFilter->addLayer( transparentObjectsLayer );
   transparentObjectsLayerFilter->setFilterMode( Qt3DRender::QLayerFilter::AcceptAnyMatchingLayers );
 
   Qt3DRender::QSortPolicy *sortPolicy = new Qt3DRender::QSortPolicy( transparentObjectsLayerFilter );

@@ -23,6 +23,7 @@
 
 #include "qgsabstractrenderview.h"
 #include "qgs3dmapcanvas.h"
+#include "qgs3d.h"
 
 #include "qgsshadowrenderview.h"
 #include "qgsforwardrenderview.h"
@@ -35,7 +36,7 @@ QgsWindow3DEngine::QgsWindow3DEngine( Qgs3DMapCanvas *parent )
   mRoot = new Qt3DCore::QEntity;
   mMapCanvas3D->setRootEntity( mRoot );
 
-  mFrameGraph = new QgsFrameGraph( mMapCanvas3D, QSize( 1024, 768 ), mMapCanvas3D->camera(), mRoot );
+  mFrameGraph = new QgsFrameGraph( mMapCanvas3D, QSize( 1024, 768 ), mMapCanvas3D->camera(), mMapCanvas3D->camera(EyeTarget::Right), mMapCanvas3D->camera(EyeTarget::Left), mRoot, Qgs3D::stereoRenderingEnabled() );
   mMapCanvas3D->setActiveFrameGraph( mFrameGraph->frameGraphRoot() );
 
   // force switching to no shadow rendering
@@ -67,8 +68,8 @@ void QgsWindow3DEngine::setRootEntity( Qt3DCore::QEntity *root )
 {
   mSceneRoot = root;
   mSceneRoot->setParent( mRoot );
-  mSceneRoot->addComponent( mFrameGraph->forwardRenderView().renderLayer() );
-  mSceneRoot->addComponent( mFrameGraph->shadowRenderView().entityCastingShadowsLayer() );
+  mSceneRoot->addComponent( mFrameGraph->renderLayer() );
+  mSceneRoot->addComponent( mFrameGraph->entityCastingShadowsLayer() );
 }
 
 Qt3DRender::QRenderSettings *QgsWindow3DEngine::renderSettings()
@@ -76,9 +77,9 @@ Qt3DRender::QRenderSettings *QgsWindow3DEngine::renderSettings()
   return mMapCanvas3D->renderSettings();
 }
 
-Qt3DRender::QCamera *QgsWindow3DEngine::camera()
+Qt3DRender::QCamera *QgsWindow3DEngine::camera(EyeTarget eye)
 {
-  return mMapCanvas3D->camera();
+  return mMapCanvas3D->camera(eye);
 }
 
 QSize QgsWindow3DEngine::size() const

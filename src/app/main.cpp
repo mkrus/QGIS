@@ -78,6 +78,7 @@ typedef SInt32 SRefCon;
 #endif
 #endif
 
+#include "qgs3d.h"
 #include "qgscustomization.h"
 #include "qgssettings.h"
 #include "qgsfontutils.h"
@@ -970,7 +971,8 @@ int main( int argc, char *argv[] )
   format.setDepthBufferSize( 24 );
   format.setSamples( 4 );
   format.setStencilBufferSize( 8 );
-  QSurfaceFormat::setDefaultFormat( format );
+  format.setStereo(Qgs3D::stereoRenderingEnabled());
+  QSurfaceFormat::setDefaultFormat( format );  
 #endif
 
   // Enable resource sharing between OpenGL contexts

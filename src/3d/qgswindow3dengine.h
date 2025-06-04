@@ -62,7 +62,7 @@ class _3D_EXPORT QgsWindow3DEngine : public QgsAbstract3DEngine
     void setRootEntity( Qt3DCore::QEntity *root ) override;
 
     Qt3DRender::QRenderSettings *renderSettings() override;
-    Qt3DRender::QCamera *camera() override;
+    Qt3DRender::QCamera *camera(EyeTarget eye = EyeTarget::Center) override;
     QSize size() const override;
     QSurface *surface() const override;
 

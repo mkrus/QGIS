@@ -17,6 +17,7 @@
 #include "moc_qgsoffscreen3dengine.cpp"
 
 #include "qgsframegraph.h"
+#include "qgs3d.h"
 
 #include <QCoreApplication>
 #include <QOffscreenSurface>
@@ -48,6 +49,9 @@ QgsOffscreen3DEngine::QgsOffscreen3DEngine()
   mCamera->setUpVector( QVector3D( 0, 1, 0 ) );
   mCamera->setViewCenter( QVector3D( 0, 0, 0 ) );
 
+  mRightCamera = new Qt3DRender::QCamera;
+  mLeftCamera = new Qt3DRender::QCamera;
+
   // Set up the engine and the aspects that we want to use.
   mAspectEngine = new Qt3DCore::QAspectEngine();
 
@@ -72,6 +76,8 @@ QgsOffscreen3DEngine::QgsOffscreen3DEngine()
   mRoot->addComponent( mRenderSettings );
 
   mCamera->setParent( mRoot );
+  mRightCamera->setParent( mRoot );
+  mLeftCamera->setParent( mRoot );
 
   // Create the offscreen frame graph, which will manage all of the resources required
   // for rendering without a QWindow.
@@ -100,11 +106,16 @@ QgsOffscreen3DEngine::QgsOffscreen3DEngine()
     format.setStencilBufferSize( 8 );
   }
 
+  const bool stereoEnabled = Qgs3D::stereoRenderingEnabled();
+  format.setStereo( stereoEnabled );
+
   mOffscreenSurface->setFormat( format );
   mOffscreenSurface->create();
 
-  mFrameGraph = new QgsFrameGraph( mOffscreenSurface, mSize, mCamera, mRoot );
-  mFrameGraph->shadowRenderView().setEnabled( false );
+  mFrameGraph = new QgsFrameGraph( mOffscreenSurface, mSize, mCamera, mRightCamera, mLeftCamera, mRoot, stereoEnabled );
+  mFrameGraph->shadowRenderView(EyeTarget::Left).setEnabled( false );
+  mFrameGraph->shadowRenderView(EyeTarget::Right).setEnabled( false );
+
   // Set this frame graph to be in use.
   // the render settings also sets itself as the parent of mSurfaceSelector
   mRenderSettings->setActiveFrameGraph( mFrameGraph->frameGraphRoot() );
@@ -149,8 +160,9 @@ void QgsOffscreen3DEngine::setRootEntity( Qt3DCore::QEntity *root )
   // Parent the incoming scene root to our current root entity.
   mSceneRoot = root;
   mSceneRoot->setParent( mRoot );
-  root->addComponent( mFrameGraph->forwardRenderView().renderLayer() );
-  root->addComponent( mFrameGraph->shadowRenderView().entityCastingShadowsLayer() );
+
+  root->addComponent( mFrameGraph->renderLayer() );
+  root->addComponent( mFrameGraph->entityCastingShadowsLayer() );
 }
 
 Qt3DRender::QRenderSettings *QgsOffscreen3DEngine::renderSettings()
@@ -158,7 +170,7 @@ Qt3DRender::QRenderSettings *QgsOffscreen3DEngine::renderSettings()
   return mRenderSettings;
 }
 
-Qt3DRender::QCamera *QgsOffscreen3DEngine::camera()
+Qt3DRender::QCamera *QgsOffscreen3DEngine::camera(EyeTarget eye)
 {
   return mCamera;
 }

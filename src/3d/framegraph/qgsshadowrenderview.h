@@ -68,7 +68,7 @@ class QgsShadowRenderView : public QgsAbstractRenderView
 {
   public:
     //! Default constructor
-    QgsShadowRenderView( const QString &viewName );
+    QgsShadowRenderView( const QString &viewName, Qt3DRender::QLayer *entityCastingShadowsLayer );
 
     //! Enable or disable via \a enable the renderview sub tree
     virtual void setEnabled( bool enable ) override;
@@ -79,9 +79,6 @@ class QgsShadowRenderView : public QgsAbstractRenderView
     //! Returns shadow depth texture
     Qt3DRender::QTexture2D *mapTexture() const;
 
-    //! Returns the layer to be used by entities to be included in this renderview
-    Qt3DRender::QLayer *entityCastingShadowsLayer() const;
-
     //! Update shadow depth texture size
     void setMapSize( int width, int height );
 
@@ -89,13 +86,12 @@ class QgsShadowRenderView : public QgsAbstractRenderView
     static constexpr int mDefaultMapResolution = 2048;
 
     // Shadow rendering pass branch nodes:
-    Qt3DRender::QLayer *mEntityCastingShadowsLayer = nullptr;
     Qt3DRender::QLayerFilter *mLayerFilter = nullptr;
     Qt3DRender::QCamera *mLightCamera = nullptr;
     Qt3DRender::QTexture2D *mMapTexture = nullptr;
 
     Qt3DRender::QRenderTarget *buildTextures();
-    void buildRenderPass();
+    void buildRenderPass(Qt3DRender::QLayer *entityCastingShadowsLayer);
 };
 
 #endif // QGSSHADOWRENDERVIEW_H
